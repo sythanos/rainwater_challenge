@@ -217,7 +217,7 @@ impl Environment {
             // A (end_pos - curr_pos) wide peak
             return self.handle_peak(curr_pos, rain_water, end_pos);
         }
-        unimplemented!()
+        rain_water
     }
 
     /// An internal method to Handle Downwards Case.
@@ -331,6 +331,19 @@ mod tests {
         approx_eq!(env.water_level(2), 4.);
         approx_eq!(env.water_level(3), 4.);
         approx_eq!(env.water_level(4), 3.);
+    }
+
+    #[test]
+    fn test_s_steps_backwater() {
+        let mut env = Environment::new(vec![1, 4, 4, 6]);
+        env.rain = vec![0., 0., 1., 0.];
+
+        let backwater = env.flow(2, 1.0);
+        approx_eq!(backwater, 2.);
+
+        approx_eq!(env.water_level(2), 4.);
+        approx_eq!(env.water_level(3), 4.);
+        approx_eq!(env.water_level(4), 6.);
     }
 
     #[test]
