@@ -132,7 +132,7 @@ impl Environment {
     /// The plateu can be either followed by an increase or further decrease.
     fn handle_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) {
         // At least 2 positions away. Since its has at least 2 horizontal levels.
-        let mut end_pos = curr_pos + 2;
+        let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
             end_pos += 1;
@@ -224,12 +224,12 @@ mod tests {
         approx_eq!(env.water_level(1), 2.0)
     }
 
-    // #[test]
-    // fn test_11_cols_1_water() {
-    //     let mut env = Environment::new(vec![1, 1]);
-    //     env.rain(1.0);
-    //     approx_eq!(env.water_level(1), 2.0)
-    // }
+    #[test]
+    fn test_11_cols_1_water() {
+        let mut env = Environment::new(vec![1, 1]);
+        env.rain(1.0);
+        approx_eq!(env.water_level(1), 2.0)
+    }
 
     #[test]
     fn test_31_cols_1_water() {
