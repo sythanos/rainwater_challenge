@@ -72,25 +72,33 @@ impl Environment {
             return rain_water;
         }
 
+        // Update rain water and walk forward if there is no rainwater
         rain_water += self.new_rain(curr_pos);
-
         if rain_water < f32::EPSILON {
             return self.flow(curr_pos + 1, 0.);
         }
 
-        let diff_left = self.columns[curr_pos - 1] - self.columns[curr_pos];
-        let diff_right = self.columns[curr_pos + 1] - self.columns[curr_pos];
+        let prev_col = self.columns[curr_pos - 1];
+        let curr_col = self.columns[curr_pos];
+        let next_col = self.columns[curr_pos + 1];
 
-        if diff_left > 0. && diff_right > 0. {
+        let diff_left = prev_col - curr_col;
+        let diff_right = next_col - curr_col;
+
+        if prev_col > curr_col && next_col > curr_col {
+            // Single Width Valley - If there is backwater return it
             return self.handle_valley(curr_pos, rain_water, diff_left, diff_right, curr_pos + 1);
-        } else if diff_left >= 0. && diff_right < 0. {
+        } else if prev_col >= curr_col && next_col < curr_col {
+            // Downwards -
             self.handle_downwards(curr_pos, rain_water);
-        } else if diff_left > 0. {
+        } else if prev_col > curr_col {
+            // Start of a Plateau -
             self.handle_plateau(curr_pos, rain_water, diff_left)
-        } else if diff_left < 0. && diff_right > 0. {
+        } else if prev_col < curr_col && next_col > curr_col {
+            // Upwards - Return all water for now
             return rain_water;
         } else {
-            println!("Curr Pos: {}", curr_pos);
+            println!("Curr Pos: {}, rainwater: {}", curr_pos, rain_water);
             println!("diff_left: {}, diff_right: {}", diff_left, diff_right);
             println!("Env: {:?}", self);
             unimplemented!("ERROR: All cases should be handled");
@@ -235,6 +243,13 @@ mod tests {
     }
 
     #[test]
+    fn test_complex_relief_no_rain() {
+        let mut env = Environment::new(vec![4, 2, 7, 8, 8, 7, 2, 4, 5, 1]);
+        let backwater = env.rain(0.0);
+        approx_eq!(backwater, 0.);
+    }
+
+    #[test]
     fn test_1_cols_1_water() {
         let mut env = Environment::new(vec![1]);
 
@@ -287,7 +302,10 @@ mod tests {
     // #[test]
     // fn test_13_cols_2_water() {
     //     let mut env = Environment::new(vec![1, 3]);
-    //     env.rain(2.0);
+
+    //     let backwater = env.rain(2.0);
+    //     approx_eq!(backwater, 0.);
+
     //     approx_eq!(env.water_level(1), 4.0);
     //     approx_eq!(env.water_level(2), 4.0);
     // }
