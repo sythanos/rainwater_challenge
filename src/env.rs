@@ -93,7 +93,7 @@ impl Environment {
             self.handle_downwards(curr_pos, rain_water);
         } else if prev_col > curr_col {
             // Start of a Plateau -
-            self.handle_plateau(curr_pos, rain_water, diff_left)
+            return self.handle_plateau(curr_pos, rain_water, diff_left);
         } else if prev_col < curr_col && next_col > curr_col {
             // Upwards - Return all water for now
             return rain_water;
@@ -130,8 +130,10 @@ impl Environment {
         right_diff: f32,
         end_pos: usize,
     ) -> f32 {
-        let new_water =
-            f32::min(rain_water, f32::min(left_diff, right_diff)) / (end_pos - curr_pos) as f32;
+        let new_water = f32::min(
+            rain_water / (end_pos - curr_pos) as f32,
+            f32::min(left_diff, right_diff),
+        );
 
         for pos in curr_pos..end_pos {
             self.columns[pos].add_water(new_water);
@@ -142,7 +144,7 @@ impl Environment {
             if right_diff > left_diff {
                 return rain_water;
             }
-            unimplemented!("Curr Pos: {}, Env: {:?}", curr_pos, self)
+            return self.handle_plateau(curr_pos, rain_water, left_diff);
         }
 
         rain_water = self.flow(end_pos, 0.0);
@@ -158,8 +160,7 @@ impl Environment {
     /// Handles a plateu starting with a decrease in height followed by at least 1 unit of equal height.
     ///
     /// The plateu can be either followed by an increase or further decrease.
-    fn handle_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) {
-        // At least 2 positions away. Since its has at least 2 horizontal levels.
+    fn handle_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) -> f32 {
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -169,7 +170,7 @@ impl Environment {
         let right_diff = self.columns[end_pos] - self.columns[curr_pos];
 
         if right_diff > 0. {
-            self.handle_valley(curr_pos, rain_water, left_diff, right_diff, end_pos);
+            return self.handle_valley(curr_pos, rain_water, left_diff, right_diff, end_pos);
         } else {
             unimplemented!("Downard Slope")
         }
@@ -240,6 +241,54 @@ mod tests {
 
         let backwater = env.flow(2, 2.0);
         approx_eq!(backwater, 2.);
+    }
+
+    #[test]
+    fn test_handle_valley_overflow_right() {
+        let mut env = Environment::new(vec![3, 1, 2]);
+        env.rain = vec![0., 0., 0.];
+
+        let backwater = env.flow(2, 2.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(2), 2.5);
+        approx_eq!(env.water_level(3), 2.5);
+    }
+
+    #[test]
+    fn test_handle_valley_complete_overflow() {
+        let mut env = Environment::new(vec![3, 1, 2]);
+        env.rain = vec![0., 0., 0.];
+
+        let backwater = env.flow(2, 4.0);
+        approx_eq!(backwater, 1.);
+
+        approx_eq!(env.water_level(2), 3.);
+        approx_eq!(env.water_level(3), 3.);
+    }
+
+    #[test]
+    fn test_handle_plateau_valley_no_overflow() {
+        let mut env = Environment::new(vec![4, 2, 2]);
+        env.rain = vec![0., 0., 0.];
+
+        let backwater = env.flow(2, 3.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(2), 3.5);
+        approx_eq!(env.water_level(3), 3.5);
+    }
+
+    #[test]
+    fn test_handle_plateau_valley_with_overflow() {
+        let mut env = Environment::new(vec![4, 2, 2]);
+        env.rain = vec![0., 0., 0.];
+
+        let backwater = env.flow(2, 5.0);
+        approx_eq!(backwater, 1.);
+
+        approx_eq!(env.water_level(2), 4.0);
+        approx_eq!(env.water_level(3), 4.0);
     }
 
     #[test]
