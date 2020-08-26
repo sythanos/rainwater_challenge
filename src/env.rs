@@ -144,7 +144,7 @@ impl Environment {
             if right_diff > left_diff {
                 return rain_water;
             }
-            return self.handle_plateau(curr_pos, rain_water, left_diff);
+            return self.flow(curr_pos, rain_water);
         }
 
         rain_water = self.flow(end_pos, 0.0);
