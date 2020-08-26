@@ -89,16 +89,22 @@ impl Environment {
         if prev_col > curr_col && next_col > curr_col {
             // Single Width Valley - If there is backwater return it
             return self.handle_valley(curr_pos, rain_water, diff_left, diff_right, curr_pos + 1);
+        } else if prev_col < curr_col && next_col < curr_col {
+            // A Single Width Peak
+            return self.handle_peak(curr_pos, rain_water, curr_pos + 1);
         } else if prev_col >= curr_col && next_col < curr_col {
             // Downwards -
             return self.handle_downwards(curr_pos, rain_water);
+        } else if prev_col < curr_col && next_col == curr_col {
+            // Start of the S-Plateau -
+            return self.handle_s_plateau(curr_pos, rain_water);
         } else if prev_col > curr_col {
-            // Start of a Plateau -
-            return self.handle_plateau(curr_pos, rain_water, diff_left);
+            // Start of a L-Plateau -
+            return self.handle_l_plateau(curr_pos, rain_water, diff_left);
         } else if prev_col < curr_col && next_col > curr_col {
             // Upwards - Return all water for now
             return rain_water;
-        } else if prev_col == curr_col && next_col == curr_col {
+        } else if prev_col == curr_col && next_col >= curr_col {
             // If on level ground just retrack to first slope
             return rain_water;
         } else {
@@ -107,8 +113,14 @@ impl Environment {
             println!("Env: {:?}", self);
             unimplemented!("ERROR: All cases should be handled");
         }
+    }
 
-        0.
+    fn handle_peak(&mut self, curr_pos: usize, rain_water: f32, end_pos: usize) -> f32 {
+        println!("PEAK {} {} {}", curr_pos, end_pos, rain_water);
+
+        let mut backwater = 0.5 * rain_water;
+        backwater += self.flow(end_pos, 0.5 * rain_water);
+        backwater
     }
 
     /// An internal method to Handle a Valley case.
@@ -165,8 +177,8 @@ impl Environment {
     /// Handles a plateu starting with a decrease in height followed by at least 1 unit of equal height.
     ///
     /// The plateu can be either followed by an increase or further decrease.
-    fn handle_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) -> f32 {
-        println!("PLATEAU {} {} ", curr_pos, rain_water);
+    fn handle_l_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) -> f32 {
+        println!("L PLATEAU {} {} ", curr_pos, rain_water);
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -181,6 +193,31 @@ impl Environment {
             let backwater = self.flow(end_pos, rain_water);
             return self.flow(curr_pos, backwater);
         }
+    }
+
+    /// An internal method of S-Shaped Plateau
+    ///
+    /// S- Shaped Plateau is of form
+    ///   --------(?)
+    ///   |
+    ///  (?)
+    ///   |
+    ///  --
+    fn handle_s_plateau(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
+        println!("S PLATEAU {} {} ", curr_pos, rain_water);
+        let mut end_pos = curr_pos + 1;
+        while self.columns[curr_pos] == self.columns[end_pos] {
+            rain_water += self.new_rain(end_pos);
+            end_pos += 1;
+        }
+
+        let right_diff = self.columns[end_pos] - self.columns[curr_pos];
+
+        if right_diff < 0. {
+            // A (end_pos - curr_pos) wide peak
+            return self.handle_peak(curr_pos, rain_water, end_pos);
+        }
+        unimplemented!()
     }
 
     /// An internal method to Handle Downwards Case.
@@ -269,6 +306,43 @@ mod tests {
 
         approx_eq!(env.water_level(2), 3.);
         approx_eq!(env.water_level(3), 3.);
+    }
+
+    #[test]
+    fn test_peak_splitting() {
+        let mut env = Environment::new(vec![1, 4, 2]);
+        env.rain = vec![0., 0., 0.];
+
+        let backwater = env.flow(2, 1.0);
+        approx_eq!(backwater, 0.5);
+
+        approx_eq!(env.water_level(2), 4.);
+        approx_eq!(env.water_level(3), 2.5);
+    }
+
+    #[test]
+    fn test_wide_peak() {
+        let mut env = Environment::new(vec![1, 4, 4, 2]);
+        env.rain = vec![0., 0., 1., 0.];
+
+        let backwater = env.flow(2, 1.0);
+        approx_eq!(backwater, 1.);
+
+        approx_eq!(env.water_level(2), 4.);
+        approx_eq!(env.water_level(3), 4.);
+        approx_eq!(env.water_level(4), 3.);
+    }
+
+    #[test]
+    fn test_peak_overflow() {
+        let mut env = Environment::new(vec![1, 4, 2]);
+        env.rain = vec![0., 0., 0.];
+
+        let backwater = env.flow(2, 5.0);
+        approx_eq!(backwater, 3.);
+
+        approx_eq!(env.water_level(2), 4.);
+        approx_eq!(env.water_level(3), 4.);
     }
 
     #[test]
@@ -404,14 +478,43 @@ mod tests {
         approx_eq!(env.water_level(2), 3.0);
     }
 
-    // #[test]
-    // fn test_13_cols_2_water() {
-    //     let mut env = Environment::new(vec![1, 3]);
+    #[test]
+    fn test_13_cols_2_water() {
+        let mut env = Environment::new(vec![1, 3]);
 
-    //     let backwater = env.rain(2.0);
-    //     approx_eq!(backwater, 0.);
+        let backwater = env.rain(2.0);
+        approx_eq!(backwater, 0.);
 
-    //     approx_eq!(env.water_level(1), 4.0);
-    //     approx_eq!(env.water_level(2), 4.0);
-    // }
+        approx_eq!(env.water_level(1), 4.0);
+        approx_eq!(env.water_level(2), 4.0);
+    }
+
+    #[test]
+    fn test_37453_cols_2_water() {
+        let mut env = Environment::new(vec![3, 7, 4, 5, 3]);
+
+        let backwater = env.rain(2.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(1), 6.0);
+        approx_eq!(env.water_level(2), 7.0);
+        approx_eq!(env.water_level(3), 6.3333333);
+        approx_eq!(env.water_level(4), 6.3333333);
+        approx_eq!(env.water_level(5), 6.3333333);
+    }
+
+    #[test]
+    fn test_3_50_50_50_50_50_1_water() {
+        let mut env = Environment::new(vec![3, 50, 50, 50, 50, 50, 3]);
+
+        let backwater = env.rain(1.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(1), 6.5);
+        approx_eq!(env.water_level(2), 50.0);
+        approx_eq!(env.water_level(4), 50.0);
+        approx_eq!(env.water_level(5), 50.0);
+        approx_eq!(env.water_level(6), 50.0);
+        approx_eq!(env.water_level(7), 6.5);
+    }
 }
