@@ -22,6 +22,21 @@ fn merge(mut left_env: VecDeque<Column>, mut right_env: VecDeque<Column>) -> Vec
 
     let mut left = left_env.pop_back().unwrap();
     let mut right = right_env.pop_front().unwrap();
+    let mut left_count = 1;
+    let mut right_count = 1;
+
+    loop {
+        match left_env.pop_back() {
+            Some(next) => {
+                if left == next {
+                    left_count += 1;
+                } else {
+                    break;
+                }
+            }
+            None => break,
+        }
+    }
 
     if left > right {
         right.add_water(left.request_water((left - right) / 2.));
@@ -40,35 +55,6 @@ fn merge(mut left_env: VecDeque<Column>, mut right_env: VecDeque<Column>) -> Vec
     }
 
     result
-
-    // let mut result = Vec::new();
-
-    // let mut left_index = 0;
-    // let mut right_index = 0;
-
-    // while left_index < left_env.len() && right_index < right_env.len() {
-    //     if left_env[left_index] > right_env[right_index] {
-    //         let new_level = (left_env[left_index] - right_env[right_index]) / 2.;
-    //         let negative_level = new_level - left_env[left_index].water_level();
-
-    //         left_env[left_index].add_water(right_env[right_index].request_water(negative_level));
-    //         result.push(left_env[left_index]);
-    //         result.push(right_env[right_index]);
-    //         left_index += 1;
-    //         right_index += 1;
-    //     }
-    // }
-
-    // for index in left_index..left_env.len() {
-    //     result.push(left_env[index]);
-    // }
-
-    // for index in right_index..right_env.len() {
-    //     result.push(right_env[index]);
-    // }
-
-    // left_env.append(&mut right_env);
-    // left_env
 }
 
 fn main() {
@@ -105,6 +91,34 @@ mod tests {
 
         assert_approx_eq!(env[0].water_level(), 3.0);
         assert_approx_eq!(env[1].water_level(), 3.0);
+    }
+
+    #[test]
+    fn test_22_with_1_water() {
+        let env = vec![Column::new(2.), Column::new(2.)];
+        let env = rain(env, 1.0);
+
+        assert_approx_eq!(env[0].water_level(), 3.0);
+        assert_approx_eq!(env[1].water_level(), 3.0);
+    }
+
+    #[test]
+    fn test_31_with_2_water() {
+        let env = vec![Column::new(3.), Column::new(1.)];
+        let env = rain(env, 2.0);
+
+        assert_approx_eq!(env[0].water_level(), 4.0);
+        assert_approx_eq!(env[1].water_level(), 4.0);
+    }
+
+    #[test]
+    fn test_321_with_1_water() {
+        let env = vec![Column::new(3.), Column::new(2.), Column::new(1.)];
+        let env = rain(env, 1.0);
+
+        assert_approx_eq!(env[0].water_level(), 3.0);
+        assert_approx_eq!(env[1].water_level(), 3.0);
+        assert_approx_eq!(env[2].water_level(), 3.0);
     }
 
     // #[test]
