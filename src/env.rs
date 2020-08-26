@@ -52,19 +52,29 @@ impl Environment {
         rain_water
     }
 
-    fn flow(&mut self, curr_pos: usize, mut rain_water: f32) {
+    fn flow(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
+        let mut backwater = 0.;
+
         if curr_pos >= self.columns.len() - 1 {
-            return;
+            return backwater;
         }
+
         rain_water += self.new_rain(curr_pos);
 
         if self.columns[curr_pos] > self.columns[curr_pos + 1] {
-            self.flow(curr_pos + 1, rain_water)
+            let rain_water = self.flow(curr_pos + 1, rain_water);
+            self.columns[curr_pos].add_water(rain_water);
+        } else if self.columns[curr_pos] > self.columns[curr_pos - 1] {
+            backwater += rain_water;
         } else {
             self.columns[curr_pos].add_water(rain_water);
             rain_water = 0.;
-            self.flow(curr_pos + 1, rain_water)
+
+            rain_water = self.flow(curr_pos + 1, rain_water);
+            self.columns[curr_pos].add_water(rain_water);
         }
+
+        backwater
     }
 }
 
@@ -122,6 +132,14 @@ mod tests {
     #[test]
     fn test_31_cols_1_water() {
         let mut env = Environment::new(vec![3, 1]);
+        env.rain(1.0);
+        approx_eq!(env.water_level(1), 3.0);
+        approx_eq!(env.water_level(2), 3.0);
+    }
+
+    #[test]
+    fn test_13_cols_1_water() {
+        let mut env = Environment::new(vec![1, 3]);
         env.rain(1.0);
         approx_eq!(env.water_level(1), 3.0);
         approx_eq!(env.water_level(2), 3.0);
