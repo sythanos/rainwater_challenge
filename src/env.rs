@@ -69,7 +69,7 @@ impl Environment {
         let diff_right = self.columns[curr_pos + 1] - self.columns[curr_pos];
 
         if diff_left > 0. && diff_right > 0. {
-            return self.handle_valley(curr_pos, rain_water, diff_left, diff_right);
+            return self.handle_valley(curr_pos, rain_water, diff_left, diff_right, curr_pos + 1);
         } else if diff_left >= 0. && diff_right < 0. {
             self.handle_downwards(curr_pos, rain_water);
         } else if diff_left > 0. {
@@ -103,15 +103,20 @@ impl Environment {
         &mut self,
         curr_pos: usize,
         mut rain_water: f32,
-        diff_left: f32,
-        diff_right: f32,
+        left_diff: f32,
+        right_diff: f32,
+        end_pos: usize,
     ) -> f32 {
-        let new_water = f32::min(rain_water, f32::min(diff_left, diff_right));
-        self.columns[curr_pos].add_water(new_water);
-        rain_water -= new_water;
+        let new_water =
+            f32::min(rain_water, f32::min(left_diff, right_diff)) / (end_pos - curr_pos) as f32;
+
+        for pos in curr_pos..end_pos {
+            self.columns[pos].add_water(new_water);
+            rain_water -= new_water;
+        }
 
         if rain_water > 0. {
-            if diff_right > diff_left {
+            if right_diff > left_diff {
                 return rain_water;
             }
             unimplemented!("Curr Pos: {}, Env: {:?}", curr_pos, self)
@@ -136,21 +141,7 @@ impl Environment {
         let right_diff = self.columns[end_pos] - self.columns[curr_pos];
 
         if right_diff > 0. {
-            let new_water =
-                f32::min(rain_water, f32::min(left_diff, right_diff)) / (end_pos - curr_pos) as f32;
-
-            for pos in curr_pos..end_pos {
-                self.columns[pos].add_water(new_water);
-                rain_water -= new_water;
-            }
-
-            if rain_water > 0. {
-                if right_diff > left_diff {
-                    unimplemented!("Overflow left");
-                    // return rain_water;
-                }
-                unimplemented!("Curr Pos: {}, Env: {:?}", curr_pos, self)
-            }
+            self.handle_valley(curr_pos, rain_water, left_diff, right_diff, end_pos);
         } else {
             unimplemented!("Downard Slope")
         }
