@@ -41,7 +41,7 @@ impl Environment {
     pub fn rain(&mut self, rain_hours: f32) {
         self.rain = vec![rain_hours; self.columns.len()];
 
-        self.flow(1);
+        self.flow(1, 0.);
     }
 
     fn new_rain(&mut self, curr_pos: usize) -> f32 {
@@ -52,19 +52,19 @@ impl Environment {
         rain_water
     }
 
-    fn flow(&mut self, curr_pos: usize) {
+    fn flow(&mut self, curr_pos: usize, mut rain_water: f32) {
         if curr_pos >= self.columns.len() - 1 {
             return;
         }
+        rain_water += self.new_rain(curr_pos);
 
         if self.columns[curr_pos] > self.columns[curr_pos + 1] {
-            unimplemented!();
+            self.flow(curr_pos + 1, rain_water)
+        } else {
+            self.columns[curr_pos].add_water(rain_water);
+            rain_water = 0.;
+            self.flow(curr_pos + 1, rain_water)
         }
-
-        let rain_water = self.new_rain(curr_pos);
-        self.columns[curr_pos].add_water(rain_water);
-
-        self.flow(curr_pos + 1)
     }
 }
 
@@ -120,10 +120,10 @@ mod tests {
     }
 
     #[test]
-    fn test_21_cols_1_water() {
-        let mut env = Environment::new(vec![2, 1]);
+    fn test_31_cols_1_water() {
+        let mut env = Environment::new(vec![3, 1]);
         env.rain(1.0);
-        approx_eq!(env.water_level(1), 2.0);
-        approx_eq!(env.water_level(2), 2.0);
+        approx_eq!(env.water_level(1), 3.0);
+        approx_eq!(env.water_level(2), 3.0);
     }
 }
