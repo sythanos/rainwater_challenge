@@ -1,13 +1,13 @@
-use std::slice::IterMut;
-
 pub struct Environment {
     columns: Vec<Column>,
+    rain: Vec<f32>,
 }
 
 impl Environment {
     /// Constructs a new `Environment`
     pub fn new(columns: Vec<u32>) -> Self {
         Self {
+            rain: vec![0.; columns.len()],
             columns: columns
                 .iter()
                 .map(|height| Column::new(*height as f32))
@@ -23,18 +23,28 @@ impl Environment {
     /// Accepts the number of hours it has rain and mutate the environment to
     /// its endstate.
     pub fn rain(&mut self, rain_hours: f32) {
-        let mut rain = vec![rain_hours; self.columns.len()];
+        self.rain = vec![rain_hours; self.columns.len()];
 
-        Self::flow(self.columns.iter_mut(), rain.iter_mut());
+        self.flow(0);
     }
 
-    fn flow(mut curr_col: IterMut<Column>, mut rain: IterMut<f32>) {
-        let rain_water = *(rain.next().unwrap_or(&mut 0.));
-
-        match curr_col.next() {
-            Some(col) => col.add_water(rain_water),
-            None => return,
+    fn new_rain(&mut self, curr_pos: usize) -> f32 {
+        let rain_water = self.rain[curr_pos];
+        if rain_water != 0. {
+            self.rain[curr_pos] = 0.;
         }
+        rain_water
+    }
+
+    fn flow(&mut self, curr_pos: usize) {
+        if curr_pos == self.columns.len() {
+            return;
+        }
+
+        let rain_water = self.new_rain(curr_pos);
+        self.columns[curr_pos].add_water(rain_water);
+
+        self.flow(curr_pos + 1)
     }
 }
 
