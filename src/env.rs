@@ -172,7 +172,8 @@ impl Environment {
         if right_diff > 0. {
             return self.handle_valley(curr_pos, rain_water, left_diff, right_diff, end_pos);
         } else {
-            unimplemented!("Downard Slope")
+            let backwater = self.flow(end_pos, rain_water);
+            return self.flow(curr_pos, backwater);
         }
     }
 
@@ -289,6 +290,45 @@ mod tests {
 
         approx_eq!(env.water_level(2), 4.0);
         approx_eq!(env.water_level(3), 4.0);
+    }
+
+    #[test]
+    fn test_handle_plateau_downward_no_backwater() {
+        let mut env = Environment::new(vec![4, 2, 2, 1]);
+        env.rain = vec![0., 0., 0., 0.];
+
+        let backwater = env.flow(2, 1.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(2), 2.0);
+        approx_eq!(env.water_level(3), 2.0);
+        approx_eq!(env.water_level(4), 2.0);
+    }
+
+    #[test]
+    fn test_handle_plateau_downward_with_backwater() {
+        let mut env = Environment::new(vec![4, 2, 2, 1]);
+        env.rain = vec![0., 0., 0., 0.];
+
+        let backwater = env.flow(2, 2.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(2), 2.333333);
+        approx_eq!(env.water_level(3), 2.333333);
+        approx_eq!(env.water_level(4), 2.333333);
+    }
+
+    #[test]
+    fn test_handle_plateau_downward_with_overflow() {
+        let mut env = Environment::new(vec![4, 2, 2, 1]);
+        env.rain = vec![0., 0., 0., 0.];
+
+        let backwater = env.flow(2, 8.0);
+        approx_eq!(backwater, 1.);
+
+        approx_eq!(env.water_level(2), 4.0);
+        approx_eq!(env.water_level(3), 4.0);
+        approx_eq!(env.water_level(4), 4.0);
     }
 
     #[test]
