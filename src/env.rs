@@ -68,6 +68,7 @@ impl Environment {
     }
 
     fn flow(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
+        println!("FLOW {} {}", curr_pos, rain_water);
         if curr_pos >= self.columns.len() - 1 {
             return rain_water;
         }
@@ -90,12 +91,15 @@ impl Environment {
             return self.handle_valley(curr_pos, rain_water, diff_left, diff_right, curr_pos + 1);
         } else if prev_col >= curr_col && next_col < curr_col {
             // Downwards -
-            self.handle_downwards(curr_pos, rain_water);
+            return self.handle_downwards(curr_pos, rain_water);
         } else if prev_col > curr_col {
             // Start of a Plateau -
             return self.handle_plateau(curr_pos, rain_water, diff_left);
         } else if prev_col < curr_col && next_col > curr_col {
             // Upwards - Return all water for now
+            return rain_water;
+        } else if prev_col == curr_col && next_col == curr_col {
+            // If on level ground just retrack to first slope
             return rain_water;
         } else {
             println!("Curr Pos: {}, rainwater: {}", curr_pos, rain_water);
@@ -130,6 +134,7 @@ impl Environment {
         right_diff: f32,
         end_pos: usize,
     ) -> f32 {
+        println!("VALLEY {} {} {}", curr_pos, end_pos, rain_water);
         let new_water = f32::min(
             rain_water / (end_pos - curr_pos) as f32,
             f32::min(left_diff, right_diff),
@@ -161,6 +166,7 @@ impl Environment {
     ///
     /// The plateu can be either followed by an increase or further decrease.
     fn handle_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) -> f32 {
+        println!("PLATEAU {} {} ", curr_pos, rain_water);
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -181,12 +187,9 @@ impl Environment {
     ///
     /// Downwards case is when left water level is equal or more to the one at the current
     /// position and right water level is strictly less.
-    fn handle_downwards(&mut self, curr_pos: usize, rain_water: f32) {
-        let mut backwater = self.flow(curr_pos + 1, rain_water);
-
-        while backwater > 0. {
-            backwater = self.flow(curr_pos, backwater);
-        }
+    fn handle_downwards(&mut self, curr_pos: usize, rain_water: f32) -> f32 {
+        let backwater = self.flow(curr_pos + 1, rain_water);
+        return self.flow(curr_pos, backwater);
     }
 }
 
@@ -324,6 +327,19 @@ mod tests {
         env.rain = vec![0., 0., 0., 0.];
 
         let backwater = env.flow(2, 8.0);
+        approx_eq!(backwater, 1.);
+
+        approx_eq!(env.water_level(2), 4.0);
+        approx_eq!(env.water_level(3), 4.0);
+        approx_eq!(env.water_level(4), 4.0);
+    }
+
+    #[test]
+    fn test_handle_downwards_with_overflow() {
+        let mut env = Environment::new(vec![4, 3, 2, 1]);
+        env.rain = vec![0., 0., 0., 0.];
+
+        let backwater = env.flow(2, 7.0);
         approx_eq!(backwater, 1.);
 
         approx_eq!(env.water_level(2), 4.0);
