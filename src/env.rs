@@ -42,8 +42,17 @@ impl Environment {
     #[allow(dead_code)]
     pub fn rain(&mut self, rain_hours: f32) -> f32 {
         self.rain = vec![rain_hours; self.columns.len() - 2];
+        let mut backdraft = 0.;
 
-        self.flow(1, 0.)
+        for rain_index in 0..self.rain.len() {
+            if self.rain[rain_index] == 0. {
+                continue;
+            }
+
+            backdraft += self.flow(rain_index + 1, 0.);
+        }
+
+        backdraft
     }
 
     /// Grabs the rain from the rain bank in the environemnt
@@ -65,6 +74,10 @@ impl Environment {
 
         rain_water += self.new_rain(curr_pos);
 
+        if rain_water < f32::EPSILON {
+            return self.flow(curr_pos + 1, 0.);
+        }
+
         let diff_left = self.columns[curr_pos - 1] - self.columns[curr_pos];
         let diff_right = self.columns[curr_pos + 1] - self.columns[curr_pos];
 
@@ -74,6 +87,8 @@ impl Environment {
             self.handle_downwards(curr_pos, rain_water);
         } else if diff_left > 0. {
             self.handle_plateau(curr_pos, rain_water, diff_left)
+        } else if diff_left < 0. && diff_right > 0. {
+            return rain_water;
         } else {
             println!("Curr Pos: {}", curr_pos);
             println!("diff_left: {}, diff_right: {}", diff_left, diff_right);
@@ -120,6 +135,11 @@ impl Environment {
                 return rain_water;
             }
             unimplemented!("Curr Pos: {}, Env: {:?}", curr_pos, self)
+        }
+
+        rain_water = self.flow(end_pos, 0.0);
+        if rain_water > 0. {
+            self.flow(curr_pos, rain_water);
         }
 
         0.
@@ -253,13 +273,16 @@ mod tests {
         approx_eq!(env.water_level(2), 4.0);
     }
 
-    // #[test]
-    // fn test_13_cols_1_water() {
-    //     let mut env = Environment::new(vec![1, 3]);
-    //     env.rain(1.0);
-    //     approx_eq!(env.water_level(1), 3.0);
-    //     approx_eq!(env.water_level(2), 3.0);
-    // }
+    #[test]
+    fn test_13_cols_1_water() {
+        let mut env = Environment::new(vec![1, 3]);
+
+        let backwater = env.rain(1.0);
+        approx_eq!(backwater, 0.);
+
+        approx_eq!(env.water_level(1), 3.0);
+        approx_eq!(env.water_level(2), 3.0);
+    }
 
     // #[test]
     // fn test_13_cols_2_water() {
