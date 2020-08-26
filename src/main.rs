@@ -22,14 +22,14 @@ fn merge(mut left_env: VecDeque<Column>, mut right_env: VecDeque<Column>) -> Vec
 
     let mut left = left_env.pop_back().unwrap();
     let mut right = right_env.pop_front().unwrap();
-    let mut left_count = 1;
-    let mut right_count = 1;
+    let mut left_count = 1.;
+    let mut right_count = 1.;
 
     loop {
         match left_env.pop_back() {
             Some(next) => {
                 if left == next {
-                    left_count += 1;
+                    left_count += 1.;
                 } else {
                     break;
                 }
@@ -38,6 +38,21 @@ fn merge(mut left_env: VecDeque<Column>, mut right_env: VecDeque<Column>) -> Vec
         }
     }
 
+    loop {
+        match right_env.pop_front() {
+            Some(next) => {
+                if right == next {
+                    right_count += 1.;
+                } else {
+                    break;
+                }
+            }
+            None => break,
+        }
+    }
+
+    let new_level = (left_count * left.water_level() + right_count * right.water_level())
+        / (left_count + right_count);
     if left > right {
         right.add_water(left.request_water((left - right) / 2.));
     } else if right > left {
