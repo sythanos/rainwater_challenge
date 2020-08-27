@@ -2,6 +2,12 @@ use std::f32;
 use std::fmt;
 use std::ops::Sub;
 
+/// Environment is the center structure of the program.
+///
+/// It stores the current state of the program. The Environment consists of a vector of n `Columns`
+/// which represent the relief + 2 infinite walls on each side and a rain bank of n-2 values.
+///
+/// When it rains for every hour rain bank fills up by 1 unit of rain.
 #[derive(Debug)]
 pub struct Environment {
     columns: Vec<Column>,
@@ -10,7 +16,6 @@ pub struct Environment {
 
 impl Environment {
     /// Constructs a new `Environment`
-    #[allow(dead_code)]
     pub fn new(columns: Vec<u32>) -> Self {
         Self {
             rain: vec![0.; columns.len()],
@@ -22,6 +27,7 @@ impl Environment {
         .add_sides()
     }
 
+    /// Adds Infinite Sides to the start and end of the array
     fn add_sides(mut self) -> Self {
         let mut columns = vec![Column::new(f32::MAX)];
         columns.append(&mut self.columns);
@@ -32,28 +38,21 @@ impl Environment {
         self
     }
 
-    /// Returns the Water Level of the environment at position `pos`.
+    /// Returns the water level of the columns in position `pos`
     #[allow(dead_code)]
     pub fn water_level(&self, pos: usize) -> f32 {
         self.columns[pos].water_level()
     }
 
-    /// Accepts the number of hours it has rain and mutate the environment to
-    /// its endstate.
-    #[allow(dead_code)]
+    /// Accepts the number of hours it has rain and mutate the environment to its endstate.
+    ///
+    /// Main Public method of the `Environment`. Calling this method will simulate `rain_hours` hours of rain that
+    /// has fallen on the `Environment`.
+    ///
+    /// It will return remaining water. That value should be 0 if algorithm worked correctly.
     pub fn rain(&mut self, rain_hours: f32) -> f32 {
         self.rain = vec![rain_hours; self.columns.len() - 2];
-        let mut backdraft = 0.;
-
-        for rain_index in 0..self.rain.len() {
-            if self.rain[rain_index] == 0. {
-                continue;
-            }
-
-            backdraft += self.flow(rain_index + 1, 0.);
-        }
-
-        backdraft
+        return self.flow(1, 0.);
     }
 
     /// Grabs the rain from the rain bank in the environemnt
@@ -68,6 +67,12 @@ impl Environment {
         rain_water
     }
 
+    /// The entry point for the recursive algorithm. It asks `rain_water` units of water to flow into the colums at position `curr_pos`
+    ///
+    /// This function is the main recursive functin and it is used to calculate the end distrubtion of the water in colums located
+    /// at `curr_pos` if `rain_water` units of water it has falled on it.
+    ///
+    /// It calls the correct handle method, depending on the topology of the local relief.
     fn flow(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
         // println!("FLOW {} {}", curr_pos, rain_water);
         if curr_pos >= self.columns.len() - 1 {
@@ -116,7 +121,11 @@ impl Environment {
         }
     }
 
-    fn handle_peak(&mut self, curr_pos: usize, rain_water: f32, end_pos: usize) -> f32 {
+    /// Handles a flat peak relief
+    ///
+    /// Handles a flat peak streching from `curr_pos` to `end_pos`. Splits the rain water
+    /// between left and right.
+    fn handle_peak(&mut self, _curr_pos: usize, rain_water: f32, end_pos: usize) -> f32 {
         // println!("PEAK {} {} {}", curr_pos, end_pos, rain_water);
 
         let mut backwater = 0.5 * rain_water;
