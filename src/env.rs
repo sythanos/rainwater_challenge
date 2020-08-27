@@ -1,4 +1,5 @@
 use std::f32;
+use std::fmt;
 use std::ops::Sub;
 
 #[derive(Debug)]
@@ -230,6 +231,32 @@ impl Environment {
     fn handle_downwards(&mut self, curr_pos: usize, rain_water: f32) -> f32 {
         let backwater = self.flow(curr_pos + 1, rain_water);
         return self.flow(curr_pos, backwater);
+    }
+}
+
+impl fmt::Display for Environment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut max = 0;
+        for col in 1..self.columns.len() - 1 {
+            let col = self.columns[col];
+            if max < col.water_level() as u32 {
+                max = col.water_level() as u32;
+            }
+        }
+
+        for level in (0..max).rev() {
+            for col in 1..self.columns.len() - 1 {
+                let col = self.columns[col];
+                if col.water_level() as u32 > level {
+                    f.write_str("x")?;
+                } else {
+                    f.write_str(" ")?;
+                }
+            }
+            f.write_str("\n")?;
+        }
+
+        Ok(())
     }
 }
 

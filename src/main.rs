@@ -25,5 +25,6 @@ fn main() {
     env.rain(rain);
 
     println!("Result is :");
+    println!("{}", env);
     println!("{:?}", env);
 }
