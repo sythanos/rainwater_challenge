@@ -80,7 +80,7 @@ impl Environment {
     ///
     /// It calls the correct handle method, depending on the topology of the local relief.
     fn flow(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
-        println!("FLOW {} {}", curr_pos, rain_water);
+        // println!("FLOW {} {}", curr_pos, rain_water);
         if curr_pos >= self.columns.len() - 1 {
             return rain_water;
         }
@@ -132,12 +132,12 @@ impl Environment {
     /// Handles a flat peak streching from `curr_pos` to `end_pos`. Splits the rain water
     /// between left and right.
     fn handle_peak(&mut self, _curr_pos: usize, rain_water: f32, end_pos: usize) -> f32 {
-        println!("PEAK {} {} {}", _curr_pos, end_pos, rain_water);
+        // println!("PEAK {} {} {}", _curr_pos, end_pos, rain_water);
 
         let mut backwater = 0.5 * rain_water;
-        println!("PEAK {} {} backwater {}", _curr_pos, end_pos, backwater);
+        // println!("PEAK {} {} backwater {}", _curr_pos, end_pos, backwater);
         backwater += self.flow(end_pos, 0.5 * rain_water);
-        println!("PEAK {} {} backwater {}", _curr_pos, end_pos, backwater);
+        // println!("PEAK {} {} backwater {}", _curr_pos, end_pos, backwater);
         backwater
     }
 
@@ -164,7 +164,7 @@ impl Environment {
         right_diff: f32,
         end_pos: usize,
     ) -> f32 {
-        println!("VALLEY {} {} {}", curr_pos, end_pos, rain_water);
+        // println!("VALLEY {} {} {}", curr_pos, end_pos, rain_water);
         let new_water = f32::min(
             rain_water / (end_pos - curr_pos) as f32,
             f32::min(left_diff, right_diff),
@@ -199,7 +199,7 @@ impl Environment {
     ///
     /// The plateu can be either followed by an increase or further decrease.
     fn handle_l_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) -> f32 {
-        println!("L PLATEAU {} {} ", curr_pos, rain_water);
+        // println!("L PLATEAU {} {} ", curr_pos, rain_water);
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -225,7 +225,7 @@ impl Environment {
     ///   |
     ///  --
     fn handle_s_plateau(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
-        println!("S PLATEAU {} {} ", curr_pos, rain_water);
+        // println!("S PLATEAU {} {} ", curr_pos, rain_water);
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -620,5 +620,24 @@ mod tests {
         approx_eq!(env.water_level(4), 6.);
         approx_eq!(env.water_level(5), 8.);
         approx_eq!(env.water_level(6), 9.);
+    }
+
+    #[test]
+    fn test_123456789_1_water() {
+        let mut env = Environment::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+        let backwater = env.rain(1.0);
+        approx_eq!(backwater, 0.);
+
+        println!("{}", env);
+        approx_eq!(env.water_level(1), 4.75);
+        approx_eq!(env.water_level(2), 4.75);
+        approx_eq!(env.water_level(3), 4.75);
+        approx_eq!(env.water_level(4), 4.75);
+        approx_eq!(env.water_level(5), 5.);
+        approx_eq!(env.water_level(6), 6.);
+        approx_eq!(env.water_level(7), 7.);
+        approx_eq!(env.water_level(8), 8.);
+        approx_eq!(env.water_level(9), 9.);
     }
 }
