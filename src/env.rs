@@ -69,7 +69,7 @@ impl Environment {
     }
 
     fn flow(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
-        println!("FLOW {} {}", curr_pos, rain_water);
+        // println!("FLOW {} {}", curr_pos, rain_water);
         if curr_pos >= self.columns.len() - 1 {
             return rain_water;
         }
@@ -117,7 +117,7 @@ impl Environment {
     }
 
     fn handle_peak(&mut self, curr_pos: usize, rain_water: f32, end_pos: usize) -> f32 {
-        println!("PEAK {} {} {}", curr_pos, end_pos, rain_water);
+        // println!("PEAK {} {} {}", curr_pos, end_pos, rain_water);
 
         let mut backwater = 0.5 * rain_water;
         backwater += self.flow(end_pos, 0.5 * rain_water);
@@ -147,7 +147,7 @@ impl Environment {
         right_diff: f32,
         end_pos: usize,
     ) -> f32 {
-        println!("VALLEY {} {} {}", curr_pos, end_pos, rain_water);
+        // println!("VALLEY {} {} {}", curr_pos, end_pos, rain_water);
         let new_water = f32::min(
             rain_water / (end_pos - curr_pos) as f32,
             f32::min(left_diff, right_diff),
@@ -159,7 +159,7 @@ impl Environment {
         }
 
         if rain_water > 0. {
-            println!("DIFFS {} {}", left_diff, right_diff);
+            // println!("DIFFS {} {}", left_diff, right_diff);
             if right_diff > left_diff {
                 return rain_water;
             } else if right_diff < left_diff {
@@ -182,7 +182,7 @@ impl Environment {
     ///
     /// The plateu can be either followed by an increase or further decrease.
     fn handle_l_plateau(&mut self, curr_pos: usize, mut rain_water: f32, left_diff: f32) -> f32 {
-        println!("L PLATEAU {} {} ", curr_pos, rain_water);
+        // println!("L PLATEAU {} {} ", curr_pos, rain_water);
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -208,7 +208,7 @@ impl Environment {
     ///   |
     ///  --
     fn handle_s_plateau(&mut self, curr_pos: usize, mut rain_water: f32) -> f32 {
-        println!("S PLATEAU {} {} ", curr_pos, rain_water);
+        // println!("S PLATEAU {} {} ", curr_pos, rain_water);
         let mut end_pos = curr_pos + 1;
         while self.columns[curr_pos] == self.columns[end_pos] {
             rain_water += self.new_rain(end_pos);
@@ -244,10 +244,13 @@ impl fmt::Display for Environment {
             }
         }
 
+        f.write_str("\nSimple Result:\n")?;
         for level in (0..max).rev() {
             for col in 1..self.columns.len() - 1 {
                 let col = self.columns[col];
-                if col.water_level() as u32 > level {
+                if col.height as u32 > level {
+                    f.write_str("O")?;
+                } else if col.water_level() as u32 > level {
                     f.write_str("x")?;
                 } else {
                     f.write_str(" ")?;
@@ -256,13 +259,24 @@ impl fmt::Display for Environment {
             f.write_str("\n")?;
         }
 
+        f.write_str("\n Exact Results: \n")?;
+        for col in 1..self.columns.len() - 1 {
+            let column = self.columns[col];
+            f.write_fmt(format_args!(
+                "Columns {} has height of {} and water_level at {}\n",
+                col,
+                column.height,
+                column.water_level(),
+            ))?;
+        }
+
         Ok(())
     }
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Column {
-    height: f32,
+    pub height: f32,
     water: f32,
 }
 
