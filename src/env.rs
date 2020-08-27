@@ -158,10 +158,13 @@ impl Environment {
         }
 
         if rain_water > 0. {
+            println!("DIFFS {} {}", left_diff, right_diff);
             if right_diff > left_diff {
                 return rain_water;
+            } else if right_diff < left_diff {
+                return self.flow(curr_pos, rain_water);
             }
-            return self.flow(curr_pos, rain_water);
+            return 0.5 * rain_water + self.flow(end_pos, rain_water * 0.5);
         }
 
         rain_water = self.flow(end_pos, 0.0);
@@ -294,6 +297,20 @@ mod tests {
 
         approx_eq!(env.water_level(2), 2.5);
         approx_eq!(env.water_level(3), 2.5);
+    }
+
+    #[test]
+    fn test_handle_valley_overflow_equal() {
+        let mut env = Environment::new(vec![3, 1, 1, 3, 1]);
+        env.rain = vec![0., 0., 0., 0., 0.];
+
+        let backwater = env.flow(2, 5.0);
+        approx_eq!(backwater, 0.5);
+
+        approx_eq!(env.water_level(2), 3.);
+        approx_eq!(env.water_level(3), 3.);
+        approx_eq!(env.water_level(4), 3.);
+        approx_eq!(env.water_level(5), 1.5);
     }
 
     #[test]
